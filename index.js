@@ -1,6 +1,13 @@
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const pino = require('pino');
+const express = require('express');
+
+// Render के पोर्ट की जरूरत पूरी करने के لیے छोटा सर्वर
+const app = express();
+const PORT = process.env.PORT || 3000;
+app.get('/', (req, res) => res.send('WhatsApp AI Bot is running!'));
+app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
@@ -16,6 +23,7 @@ async function startBot() {
     sock.ev.on('connection.update', (update) => {
         const { connection, lastDisconnect, qr } = update;
         if (qr) {
+            console.log("👉 QR CODE:", qr);
             console.log("👉 कृपया Render के Logs में जाकर इस QR कोड को अपने WhatsApp से स्कैन करें!");
         }
         if (connection === 'close') {
