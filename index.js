@@ -2,8 +2,8 @@ const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = requi
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const pino = require('pino');
 const express = require('express');
+const qrcode = require('qrcode-terminal');
 
-// Render के पोर्ट की जरूरत पूरी करने के لیے छोटा सर्वर
 const app = express();
 const PORT = process.env.PORT || 3000;
 app.get('/', (req, res) => res.send('WhatsApp AI Bot is running!'));
@@ -23,8 +23,8 @@ async function startBot() {
     sock.ev.on('connection.update', (update) => {
         const { connection, lastDisconnect, qr } = update;
         if (qr) {
-            console.log("👉 QR CODE:", qr);
-            console.log("👉 कृपया Render के Logs में जाकर इस QR कोड को अपने WhatsApp से स्कैन करें!");
+            console.log("👉 कृपया नीचे दिए गए QR कोड को अपने WhatsApp से स्कैन करें:");
+            qrcode.generate(qr, { small: true });
         }
         if (connection === 'close') {
             const shouldReconnect = (lastDisconnect.error)?.output?.statusCode !== DisconnectReason.loggedOut;
