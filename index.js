@@ -9,13 +9,12 @@ const PORT = process.env.PORT || 3000;
 
 let latestQR = '';
 
-// जब आप अपने Render लिंक को ब्राउज़र में खोलेंगे, तो यह साफ QR कोड दिखाएगा
 app.get('/', async (req, res) => {
     if (!latestQR) {
         return res.send(`
             <div style="text-align: center; margin-top: 50px; font-family: sans-serif;">
-                <h2>⏳ QR Code जनरेट हो रहा है या बॉट पहले से कनेक्टेड है।</h2>
-                <p>कृपया 10-20 सेकंड इंतज़ार करें और पेज को रिफ्रेश करें।</p>
+                <h2>✅ WhatsApp AI Bot कनेक्टेड है!</h2>
+                <p>बॉट पहले से ही चालू अवस्था में है।</p>
             </div>
         `);
     }
@@ -24,10 +23,7 @@ app.get('/', async (req, res) => {
         res.send(`
             <div style="text-align: center; margin-top: 40px; font-family: sans-serif;">
                 <h2>🤖 WhatsApp AI Bot QR Code</h2>
-                <p>अपने फोन के WhatsApp से इस साफ़ QR कोड को स्कैन करें:</p>
-                <img src="${qrImage}" alt="WhatsApp QR Code" style="width: 320px; height: 320px; border: 3px solid #007bff; padding: 10px; border-radius: 12px; background: white;" />
-                <br><br>
-                <button onclick="location.reload()" style="padding: 12px 24px; font-size: 16px; background-color: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer;">🔄 Refresh QR Code</button>
+                <img src="${qrImage}" alt="QR Code" style="width: 320px; height: 320px; border: 3px solid #007bff; padding: 10px; border-radius: 12px; background: white;" />
             </div>
         `);
     } catch (err) {
@@ -52,7 +48,7 @@ async function startBot() {
         const { connection, lastDisconnect, qr } = update;
         if (qr) {
             latestQR = qr;
-            console.log("👉 नया QR कोड मिल गया है! अब आप अपने Render वेब लिंक को ब्राउज़र में खोलकर देख सकते हैं।");
+            console.log("👉 नया QR कोड मिल गया है!");
         }
         if (connection === 'close') {
             const shouldReconnect = (lastDisconnect.error)?.output?.statusCode !== DisconnectReason.loggedOut;
@@ -68,7 +64,10 @@ async function startBot() {
         if (!m.message || m.key.fromMe) return;
 
         const sender = m.key.remoteJid;
-        const textMessage = m.message.conversation || m.message.extendedTextMessage?.text;
+        
+        // यह लाइन अब किसी भी प्रकार के मैसेज (सामान्य या Ephemeral) से टेक्स्ट को आसानी से निकाल लेगी
+        const messageContent = m.message.ephemeralMessage?.message || m.message;
+        const textMessage = messageContent.conversation || messageContent.extendedTextMessage?.text;
 
         if (!textMessage) return;
 
@@ -79,7 +78,7 @@ async function startBot() {
             const responseText = result.response.text();
 
             await sock.sendMessage(sender, { text: responseText });
-            console.log(`🤖 जवाब भेजा गया.`);
+            console.log(`🤖 जवाब भेज दिया गया.`);
         } catch (error) {
             console.error("AI Error:", error);
         }
