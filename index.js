@@ -13,8 +13,8 @@ app.get('/', async (req, res) => {
     if (!latestQR) {
         return res.send(`
             <div style="text-align: center; margin-top: 50px; font-family: sans-serif;">
-                <h2>✅ WhatsApp AI Bot कनेक्टेड है!</h2>
-                <p>बॉट पहले से ही चालू अवस्था में है।</p>
+                <h2>✅ WhatsApp AI Bot सफलतापूर्वक कनेक्टेड है!</h2>
+                <p>बॉट ऑनलाइन है और काम कर रहा है।</p>
             </div>
         `);
     }
@@ -59,28 +59,36 @@ async function startBot() {
         }
     });
 
-    sock.ev.on('messages.upsert', async ({ messages }) => {
-        const m = messages[0];
+    // नया और सुधरा हुआ मैसेज हैंडलर
+    sock.ev.on('messages.upsert', async (chatUpdate) => {
+        if (chatUpdate.type !== 'notify') return;
+        
+        const m = chatUpdate.messages[0];
         if (!m.message || m.key.fromMe) return;
 
         const sender = m.key.remoteJid;
         
-        // यह लाइन अब किसी भी प्रकार के मैसेज (सामान्य या Ephemeral) से टेक्स्ट को आसानी से निकाल लेगी
+        // स्टेटस या ब्रॉडकास्ट मैसेज को इग्नोर करें
+        if (sender.includes('status@broadcast')) return;
+
         const messageContent = m.message.ephemeralMessage?.message || m.message;
-        const textMessage = messageContent.conversation || messageContent.extendedTextMessage?.text;
+        const textMessage = messageContent.conversation || 
+                            messageContent.extendedTextMessage?.text || 
+                            messageContent.imageMessage?.caption;
 
         if (!textMessage) return;
 
         try {
-            console.log(`💬 संदेश मिला: ${textMessage}`);
+            console.log(`💬 नया संदेश मिला (${sender}): ${textMessage}`);
+            
             const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
             const result = await model.generateContent(textMessage);
             const responseText = result.response.text();
 
             await sock.sendMessage(sender, { text: responseText });
-            console.log(`🤖 जवाब भेज दिया गया.`);
+            console.log(`🤖 AI का जवाब सफलताપૂર્વक भेज दिया गया.`);
         } catch (error) {
-            console.error("AI Error:", error);
+            console.error("❌ AI Error:", error);
         }
     });
 }
