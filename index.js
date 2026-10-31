@@ -76,8 +76,8 @@ async function startBot() {
 
             console.log(`💬 संदेश मिला (${sender}): ${msgBody}`);
 
-            // यहाँ मॉडल का नाम सही करके 'gemini-1.5-flash' सेट किया गया है
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            // 'gemini-pro' मॉडल का उपयोग किया गया है ताकि 404 एरर न आए
+            const model = genAI.getGenerativeModel({ model: "gemini-pro" });
             const result = await model.generateContent(msgBody);
             const responseText = result.response.text();
 
