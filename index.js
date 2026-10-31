@@ -13,7 +13,7 @@ app.get('/', async (req, res) => {
     if (!latestQR) {
         return res.send(`
             <div style="text-align: center; margin-top: 50px; font-family: sans-serif;">
-                <h2>✅ WhatsApp AI Bot सफलतापूर्वक कनेक्टेड है!</h2>
+                <h2>✅ WhatsApp AI Bot कनेक्टेड है!</h2>
                 <p>बॉट ऑनलाइन है और काम कर रहा है।</p>
             </div>
         `);
@@ -59,36 +59,32 @@ async function startBot() {
         }
     });
 
-    // नया और सुधरा हुआ मैसेज हैंडलर
     sock.ev.on('messages.upsert', async (chatUpdate) => {
-        if (chatUpdate.type !== 'notify') return;
-        
-        const m = chatUpdate.messages[0];
-        if (!m.message || m.key.fromMe) return;
-
-        const sender = m.key.remoteJid;
-        
-        // स्टेटस या ब्रॉडकास्ट मैसेज को इग्नोर करें
-        if (sender.includes('status@broadcast')) return;
-
-        const messageContent = m.message.ephemeralMessage?.message || m.message;
-        const textMessage = messageContent.conversation || 
-                            messageContent.extendedTextMessage?.text || 
-                            messageContent.imageMessage?.caption;
-
-        if (!textMessage) return;
-
         try {
-            console.log(`💬 नया संदेश मिला (${sender}): ${textMessage}`);
-            
+            const m = chatUpdate.messages[0];
+            if (!m.message || m.key.fromMe) return;
+
+            const sender = m.key.remoteJid;
+            if (sender.includes('status@broadcast')) return;
+
+            const msgBody = m.message.conversation || 
+                            m.message.extendedTextMessage?.text || 
+                            m.message.ephemeralMessage?.message?.conversation || 
+                            m.message.ephemeralMessage?.message?.extendedTextMessage?.text;
+
+            if (!msgBody) return;
+
+            console.log(`💬 संदेश मिला (${sender}): ${msgBody}`);
+
+            // यहाँ मॉडल का नाम सही करके 'gemini-1.5-flash' सेट किया गया है
             const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-            const result = await model.generateContent(textMessage);
+            const result = await model.generateContent(msgBody);
             const responseText = result.response.text();
 
             await sock.sendMessage(sender, { text: responseText });
-            console.log(`🤖 AI का जवाब सफलताપૂર્વक भेज दिया गया.`);
+            console.log(`🤖 AI का जवाब सफलतापूर्वक भेज दिया गया.`);
         } catch (error) {
-            console.error("❌ AI Error:", error);
+            console.error("❌ Error in message handler:", error);
         }
     });
 }
